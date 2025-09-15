@@ -1,1 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本株分析ツール</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📊 日本株分析ツール</h1>
+            <p>中級投資家向け財務指標分析</p>
+        </div>
+    </header>
 
+    <main class="container">
+        <!-- 銘柄検索セクション -->
+        <section class="search-section">
+            <h2>銘柄を検索</h2>
+            <div class="search-box">
+                <input type="text" id="stockCode" placeholder="銘柄コードを入力（例：7203）" maxlength="4">
+                <button id="searchBtn">分析開始</button>
+            </div>
+        </section>
+
+        <!-- 分析結果表示エリア -->
+        <section id="results" class="results-section" style="display: none;">
+            <h2 id="stockName">銘柄名</h2>
+            
+            <!-- 基本情報 -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>現在株価</h3>
+                    <p id="currentPrice" class="price">-</p>
+                </div>
+                <div class="info-card">
+                    <h3>前日比</h3>
+                    <p id="priceChange" class="change">-</p>
+                </div>
+                <div class="info-card">
+                    <h3>出来高</h3>
+                    <p id="volume">-</p>
+                </div>
+            </div>
+
+            <!-- 財務指標 -->
+            <div class="metrics-section">
+                <h3>財務指標</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>PER</h4>
+                        <p id="per" class="metric-value">-</p>
+                        <span class="metric-label">倍</span>
+                    </div>
+                    <div class="metric-card">
+                        <h4>PBR</h4>
+                        <p id="pbr" class="metric-value">-</p>
+                        <span class="metric-label">倍</span>
+                    </div>
+                    <div class="metric-card">
+                        <h4>ROE</h4>
+                        <p id="roe" class="metric-value">-</p>
+                        <span class="metric-label">%</span>
+                    </div>
+                    <div class="metric-card">
+                        <h4>配当利回り</h4>
+                        <p id="dividend" class="metric-value">-</p>
+                        <span class="metric-label">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 評価セクション -->
+            <div class="evaluation-section">
+                <h3>総合評価</h3>
+                <div id="overallRating" class="rating-display">
+                    <span class="rating-score">-</span>
+                    <span class="rating-text">分析中...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ローディング表示 -->
+        <div id="loading" class="loading" style="display: none;">
+            <p>分析中...</p>
+        </div>
+
+        <!-- エラー表示 -->
+        <div id="error" class="error" style="display: none;">
+            <p>エラーが発生しました。銘柄コードを確認してください。</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 日本株分析ツール - データ提供: Yahoo Finance</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
