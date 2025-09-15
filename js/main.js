@@ -39,7 +39,7 @@ async function handleSearch() {
     showLoading();
 
     try {
-        // 株価データを取得（現在はモックデータ）
+        // 株価データを取得（実際のAPI）
         const stockData = await fetchStockData(stockCode);
         
         // データを表示
@@ -48,76 +48,62 @@ async function handleSearch() {
         
     } catch (error) {
         console.error('Error fetching stock data:', error);
-        showError('データの取得に失敗しました。しばらく後でお試しください。');
+        showError(`データの取得に失敗しました: ${error.message}`);
     } finally {
         hideLoading();
     }
 }
 
-// 株価データを取得する関数（現在はモックデータ）
+// 実際のAPIから株価データを取得する関数
 async function fetchStockData(stockCode) {
-    // 実際のAPIコールの代わりにモックデータを返す
-    // 後でPythonバックエンドと連携する際にここを変更
+    const API_BASE_URL = 'http://localhost:5000/api';
     
-    // 少し遅延を入れてリアルな感覚を演出
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // 有名な日本株のモックデータ
-    const mockData = {
-        '7203': { // トヨタ
-            name: 'トヨタ自動車(株)',
-            price: 2450.5,
-            change: 15.5,
-            volume: 8543200,
-            per: 9.8,
-            pbr: 0.95,
-            roe: 9.2,
-            dividend: 2.8
-        },
-        '6758': { // ソニー
-            name: 'ソニーグループ(株)',
-            price: 12850,
-            change: -125,
-            volume: 2156400,
-            per: 15.2,
-            pbr: 1.8,
-            roe: 12.5,
-            dividend: 1.2
-        },
-        '9984': { // ソフトバンク
-            name: 'ソフトバンクグループ(株)',
-            price: 5890,
-            change: 45,
-            volume: 12456800,
-            per: 22.3,
-            pbr: 1.2,
-            roe: 5.8,
-            dividend: 0.85
-        },
-        '8306': { // 三菱UFJ
-            name: '(株)三菱UFJフィナンシャル・グループ',
-            price: 1285.5,
-            change: 8.5,
-            volume: 15623400,
-            per: 8.9,
-            pbr: 0.65,
-            roe: 7.8,
-            dividend: 3.2
+    try {
+        console.log(`APIリクエスト開始: ${stockCode}`);
+        
+        const response = await fetch(`${API_BASE_URL}/stock/${stockCode}`);
+        
+        console.log(`APIレスポンス状況: ${response.status}`);
+        
+        if (!response.ok) {
+            if (response.status === 400) {
+                throw new Error('正しい4桁の銘柄コードを入力してください');
+            } else if (response.status === 500) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'サーバーエラーが発生しました');
+            } else {
+                throw new Error(`HTTP Error: ${response.status}`);
+            }
         }
-    };
-
-    const data = mockData[stockCode];
-    if (!data) {
-        throw new Error('銘柄が見つかりません');
+        
+        const data = await response.json();
+        console.log('受信データ:', data);
+        
+        // データの妥当性チェック
+        if (!data || !data.stock_code) {
+            throw new Error('無効なデータ形式です');
+        }
+        
+        return data;
+        
+    } catch (error) {
+        console.error('API通信エラー:', error);
+        
+        // ネットワークエラーの場合
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('APIサーバーに接続できません。サーバーが起動しているか確認してください');
+        }
+        
+        throw error;
     }
-
-    return data;
 }
 
 // 株価データを画面に表示
 function displayStockData(data) {
+    console.log('表示データ:', data);
+    
     // 基本情報
-    stockNameEl.textContent = data.name;
+    stockNameEl.textContent = data.name || `銘柄コード: ${data.stock_code}`;
     currentPriceEl.textContent = `¥${data.price.toLocaleString()}`;
     
     // 前日比の表示と色分け
@@ -129,10 +115,10 @@ function displayStockData(data) {
     volumeEl.textContent = data.volume.toLocaleString();
 
     // 財務指標
-    perEl.textContent = data.per.toFixed(1);
-    pbrEl.textContent = data.pbr.toFixed(2);
-    roeEl.textContent = data.roe.toFixed(1);
-    dividendEl.textContent = data.dividend.toFixed(2);
+    perEl.textContent = data.per ? data.per.toFixed(1) : '-';
+    pbrEl.textContent = data.pbr ? data.pbr.toFixed(2) : '-';
+    roeEl.textContent = data.roe ? data.roe.toFixed(1) : '-';
+    dividendEl.textContent = data.dividend ? data.dividend.toFixed(2) : '-';
 
     // 総合評価を計算
     const rating = calculateOverallRating(data);
@@ -145,53 +131,61 @@ function calculateOverallRating(data) {
     let factors = [];
 
     // PERの評価（低いほど良い、一般的に15以下が良好）
-    if (data.per < 10) {
-        score += 20;
-        factors.push('低PER');
-    } else if (data.per < 15) {
-        score += 15;
-    } else if (data.per < 25) {
-        score += 10;
-    } else {
-        score += 5;
-        factors.push('高PER注意');
+    if (data.per && data.per > 0) {
+        if (data.per < 10) {
+            score += 20;
+            factors.push('低PER');
+        } else if (data.per < 15) {
+            score += 15;
+        } else if (data.per < 25) {
+            score += 10;
+        } else {
+            score += 5;
+            factors.push('高PER注意');
+        }
     }
 
     // PBRの評価（1倍前後が理想的）
-    if (data.pbr >= 0.8 && data.pbr <= 1.2) {
-        score += 20;
-        factors.push('適正PBR');
-    } else if (data.pbr < 0.8) {
-        score += 15;
-        factors.push('割安PBR');
-    } else if (data.pbr <= 2.0) {
-        score += 10;
-    } else {
-        score += 5;
+    if (data.pbr && data.pbr > 0) {
+        if (data.pbr >= 0.8 && data.pbr <= 1.2) {
+            score += 20;
+            factors.push('適正PBR');
+        } else if (data.pbr < 0.8) {
+            score += 15;
+            factors.push('割安PBR');
+        } else if (data.pbr <= 2.0) {
+            score += 10;
+        } else {
+            score += 5;
+        }
     }
 
     // ROEの評価（高いほど良い、10%以上が理想）
-    if (data.roe >= 15) {
-        score += 25;
-        factors.push('高ROE');
-    } else if (data.roe >= 10) {
-        score += 20;
-        factors.push('良好ROE');
-    } else if (data.roe >= 5) {
-        score += 15;
-    } else {
-        score += 10;
-        factors.push('低ROE注意');
+    if (data.roe && data.roe > 0) {
+        if (data.roe >= 15) {
+            score += 25;
+            factors.push('高ROE');
+        } else if (data.roe >= 10) {
+            score += 20;
+            factors.push('良好ROE');
+        } else if (data.roe >= 5) {
+            score += 15;
+        } else {
+            score += 10;
+            factors.push('低ROE注意');
+        }
     }
 
     // 配当利回りの評価
-    if (data.dividend >= 3) {
-        score += 15;
-        factors.push('高配当');
-    } else if (data.dividend >= 2) {
-        score += 10;
-    } else {
-        score += 5;
+    if (data.dividend && data.dividend > 0) {
+        if (data.dividend >= 3) {
+            score += 15;
+            factors.push('高配当');
+        } else if (data.dividend >= 2) {
+            score += 10;
+        } else {
+            score += 5;
+        }
     }
 
     return {
@@ -267,6 +261,6 @@ function formatCurrency(num) {
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('日本株分析ツールが起動しました');
+    console.log('日本株分析ツールが起動しました（API連携版）');
     stockCodeInput.focus();
 });
