@@ -122,7 +122,8 @@ function displayStockData(data) {
     
     // 前日比の表示と色分け
     const changeText = data.change > 0 ? `+¥${data.change}` : `¥${data.change}`;
-    priceChangeEl.textContent = changeText;
+    const changePercentText = data.change_percent > 0 ? `+${data.change_percent}%` : `${data.change_percent}%`;
+    priceChangeEl.textContent = `${changeText} (${changePercentText})`;
     priceChangeEl.className = 'change ' + (data.change > 0 ? 'positive' : 'negative');
     
     volumeEl.textContent = data.volume.toLocaleString();
